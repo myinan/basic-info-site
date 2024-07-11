@@ -1,41 +1,37 @@
-import http from "node:http";
+import express from "express";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-const server = http.createServer(async (req, res) => {
-  const { url } = req;
-
-  try {
-    switch (url) {
-      case "/":
-        await serveFile(res, "views/index.html");
-        break;
-      case "/about":
-        await serveFile(res, "views/about.html");
-        break;
-      case "/contact-me":
-        await serveFile(res, "views/contact-me.html");
-        break;
-      default:
-        res.statusCode = 404;
-        res.setHeader("Content-Type", "text/html");
-        res.end("<h1>404 Not Found</h1>");
-    }
-  } catch (err) {
-    console.error(err);
-    res.statusCode = 500;
-    res.setHeader("Content-Type", "text/html");
-    res.end("<h1>500 Internal Server Error</h1>");
-  }
-});
+const app = express();
 
 async function serveFile(res, filePath) {
-  const fullPath = join(process.cwd(), filePath);
-  const data = await readFile(fullPath, "utf-8");
-  res.setHeader("Content-Type", "text/html");
-  res.end(data);
+  try {
+    const data = await readFile(join(process.cwd(), filePath), "utf-8");
+    res.setHeader("Content-Type", "text/html");
+    res.send(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("<h1>500 Internal Server Error</h1>");
+  }
 }
 
-server.listen(8080, () => {
-  console.log("Server running at http://localhost:8080/");
+app.get("/", (req, res) => {
+  serveFile(res, "views/index.html");
+});
+
+app.get("/about", (req, res) => {
+  serveFile(res, "views/about.html");
+});
+
+app.get("/contact-me", (req, res) => {
+  serveFile(res, "views/contact-me.html");
+});
+
+app.use((req, res) => {
+  res.status(404).send("<h1>404 Not Found</h1>");
+});
+
+const PORT = 8080;
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}/`);
 });
